@@ -1,496 +1,92 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎈 点击气球 · 收获温暖</title>
-<style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  body {
-    width: 100vw; height: 100vh;
-    overflow: hidden;
-    background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    cursor: crosshair;
-    user-select: none;
-  }
-
-  /* ===== 星空背景 ===== */
-  .stars { position: fixed; inset: 0; pointer-events: none; }
-  .star {
-    position: absolute;
-    width: 2px; height: 2px;
-    background: #fff;
-    border-radius: 50%;
-    animation: twinkle var(--dur) ease-in-out infinite alternate;
-  }
-  @keyframes twinkle { 0% { opacity: .2; } 100% { opacity: 1; } }
-
-  /* ===== 顶部标题 ===== */
-  .header {
-    position: fixed; top: 0; left: 0; right: 0;
-    text-align: center; padding: 24px 16px 12px;
-    z-index: 100;
-    pointer-events: none;
-  }
-  .header h1 {
-    font-size: 28px; font-weight: 700;
-    background: linear-gradient(135deg, #ff6bc1, #ffc371, #a8e6cf);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    text-shadow: none;
-    letter-spacing: 2px;
-  }
-  .header .sub {
-    color: rgba(255,255,255,.45); font-size: 13px; margin-top: 6px;
-  }
-
-  /* ===== 计分板 ===== */
-  .score-board {
-    position: fixed; top: 20px; right: 24px;
-    background: rgba(255,255,255,.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 16px;
-    padding: 14px 22px;
-    color: #fff; z-index: 100;
-    pointer-events: none;
-  }
-  .score-board .label { font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: 1px; }
-  .score-board .num { font-size: 32px; font-weight: 800; line-height: 1.1; }
-
-  /* ===== 气球 ===== */
-  .balloon {
-    position: absolute;
-    cursor: pointer;
-    transition: filter .15s;
-    animation: floatUp var(--speed) linear forwards;
-    z-index: 10;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
-  }
-  .balloon:hover { filter: brightness(1.25) drop-shadow(0 8px 32px rgba(255,255,255,.2)); transform: scale(1.08); }
-
-  .balloon svg { width: 100%; height: 100%; }
-
-  @keyframes floatUp {
-    0%   { transform: translateY(0) rotate(var(--sway-start)); opacity: 1; }
-    25%  { transform: translateY(-25vh) rotate(var(--sway-mid)); }
-    50%  { transform: translateY(-50vh) rotate(var(--sway-start)); }
-    75%  { transform: translateY(-75vh) rotate(var(--sway-mid)); }
-    100% { transform: translateY(-110vh) rotate(var(--sway-start)); opacity: 0; }
-  }
-
-  /* ===== 爆炸粒子 ===== */
-  .explosion {
-    position: absolute;
-    pointer-events: none;
-    z-index: 50;
-  }
-  .particle {
-    position: absolute;
-    border-radius: 50%;
-    animation: burst .65s cubic-bezier(.25,.46,.45,.94) forwards;
-  }
-  @keyframes burst {
-    0%   { transform: translate(0,0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-  }
-
-  /* 爆炸闪光 */
-  .flash {
-    position: absolute;
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 70%);
-    animation: flashAnim .35s ease-out forwards;
-    pointer-events: none;
-    z-index: 49;
-  }
-  @keyframes flashAnim {
-    0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
-    100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
-  }
-
-  /* ===== 安慰语卡片 ===== */
-  .comfort-card {
-    position: fixed;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    background: rgba(255,255,255,.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 24px;
-    padding: 40px 48px;
-    text-align: center;
-    z-index: 200;
-    max-width: 420px;
-    width: 88vw;
-    animation: cardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
-  }
-  .comfort-card.out { animation: cardOut .35s ease-in forwards; }
-
-  @keyframes cardIn {
-    0%   { transform: translate(-50%,-50%) scale(0) rotate(-5deg); opacity: 0; }
-    100% { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
-  }
-  @keyframes cardOut {
-    0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; }
-    100% { transform: translate(-50%,-50%) scale(.8) translateY(30px); opacity: 0; }
-  }
-
-  .comfort-card .emoji { font-size: 48px; margin-bottom: 16px; }
-  .comfort-card .text {
-    font-size: 20px; line-height: 1.7;
-    color: #fff;
-    font-weight: 500;
-  }
-  .comfort-card .hint {
-    margin-top: 18px;
-    font-size: 12px;
-    color: rgba(255,255,255,.35);
-  }
-
-  /* ===== 彩带/纸屑 ===== */
-  .confetti {
-    position: fixed;
-    width: 8px; height: 14px;
-    z-index: 199;
-    animation: confettiFall var(--cf-dur) linear forwards;
-    pointer-events: none;
-  }
-  @keyframes confettiFall {
-    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(100vh) rotate(var(--cf-rot)); opacity: 0; }
-  }
-
-  /* ===== 连击提示 ===== */
-  .combo {
-    position: fixed;
-    font-size: 22px; font-weight: 800;
-    color: #ffc371;
-    pointer-events: none;
-    z-index: 150;
-    animation: comboPop .8s ease-out forwards;
-    text-shadow: 0 2px 12px rgba(255,195,113,.6);
-  }
-  @keyframes comboPop {
-    0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
-    30%  { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
-    100% { transform: translate(-50%, calc(-50% - 60px)) scale(1); opacity: 0; }
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+  <title>戳破烦恼 · 收藏温暖</title>
+  <link rel="stylesheet" href="./style.css" />
 </head>
 <body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">🎈</div>
+        <div class="title">
+          <div class="name">戳破烦恼 · 收藏温暖</div>
+          <div class="sub">点击气球，爆掉压力，收下治愈</div>
+        </div>
+      </div>
 
-<div class="stars" id="stars"></div>
+      <div class="stats">
+        <div class="stat">
+          <div class="label">今日爆破</div>
+          <div class="value" id="todayCount">0</div>
+        </div>
+        <div class="stat">
+          <div class="label">连续天数</div>
+          <div class="value" id="streak">0</div>
+        </div>
+      </div>
+    </header>
 
-<div class="header">
-  <h1>🎈 戳破烦恼 · 收获温暖</h1>
-  <div class="sub">点击气球，让烦恼炸裂，让温暖涌来</div>
-</div>
+    <main class="stage" id="stage">
+      <div class="stars"></div>
 
-<div class="score-board">
-  <div class="label">POPPED</div>
-  <div class="num" id="score">0</div>
-</div>
+      <div class="balloon" id="balloon" aria-label="balloon">
+        <div class="balloon-body"></div>
+        <div class="balloon-knot"></div>
+        <div class="balloon-string"></div>
+      </div>
 
-<div id="game"></div>
+      <div class="hint" id="hint">点一下气球 💥</div>
 
-<script>
-// ============ 安慰语库 ============
-const COMFORTS = [
-  { emoji: "🌈", text: "雨后一定会有彩虹的，再坚持一下吧。" },
-  { emoji: "🌟", text: "你已经很棒了，不要对自己太苛刻。" },
-  { emoji: "🍀", text: "好运正在赶来的路上，请保持期待。" },
-  { emoji: "🌻", text: "面朝太阳，阴影就在身后。" },
-  { emoji: "💪", text: "没关系，慢慢来，谁的生活都不容易。" },
-  { emoji: "🤗", text: "想哭就哭吧，哭完了继续做最酷的自己。" },
-  { emoji: "🧸", text: "今天也要好好吃饭，好好睡觉哦。" },
-  { emoji: "🌙", text: "黑夜再长，也终将迎来黎明。" },
-  { emoji: "☀️", text: "你值得被这个世界温柔以待。" },
-  { emoji: "🎵", text: "累了就歇一歇，世界可以等等你。" },
-  { emoji: "🌷", text: "你笑起来真的很好看，多笑笑吧。" },
-  { emoji: "🍵", text: "给自己泡杯热茶，暖暖手，暖暖心。" },
-  { emoji: "📖", text: "所有你经历的，都会变成未来的礼物。" },
-  { emoji: "💌", text: "有人正在偷偷爱着你，你知道吗？" },
-  { emoji: "🎀", text: "不必完美，你已经足够特别了。" },
-  { emoji: "🦋", text: "破茧成蝶需要时间，请耐心等待。" },
-  { emoji: "🏠", text: "回家的路上有灯光在等你。" },
-  { emoji: "🍰", text: "吃一块蛋糕吧，甜食可以治愈一切。" },
-  { emoji: "🐱", text: "你是别人眼中的小太阳，自己却不知道。" },
-  { emoji: "🌊", text: "潮起潮落都是风景，别着急。" },
-  { emoji: "⭐", text: "就算全世界都不理解你，你也要理解自己。" },
-  { emoji: "🎭", text: "偶尔脆弱没关系，那也是真实的你。" },
-  { emoji: "🔥", text: "你内心的火焰，没有人能熄灭。" },
-  { emoji: "🌸", text: "春天来了，花会开，事情会变好的。" },
-  { emoji: "🧡", text: "深呼吸，你比想象中更坚强。" },
-];
+      <div class="toast" id="toast" hidden>
+        <div class="quote" id="quote"></div>
+        <div class="actions">
+          <button class="btn ghost" id="againBtn">再爆一个</button>
+          <button class="btn" id="posterBtn">生成分享图</button>
+        </div>
+      </div>
 
-// ============ 气球颜色组 ============
-const BALLOON_THEMES = [
-  { body: "#FF6B8A", shine: "#FF9DB5", shadow: "#D44E6C" },
-  { body: "#7C5CFC", shine: "#A48DFF", shadow: "#5A3DD4" },
-  { body: "#00C9A7", shine: "#5EECD5", shadow: "#009E82" },
-  { body: "#FFB347", shine: "#FFD08A", shadow: "#D48E2E" },
-  { body: "#FF6F61", shine: "#FF9A91", shadow: "#D44F43" },
-  { body: "#4FC3F7", shine: "#81D4FA", shadow: "#2196D3" },
-  { body: "#E040FB", shine: "#EA80FC", shadow: "#AB00D9" },
-  { body: "#69F0AE", shine: "#B9F6CA", shadow: "#3DDC84" },
-  { body: "#FF8A80", shine: "#FFB3AD", shadow: "#D46456" },
-  { body: "#FFD54F", shine: "#FFE97D", shadow: "#C9A825" },
-];
+      <div class="panel" id="rankPanel" hidden>
+        <div class="panel-hd">
+          <div class="panel-title">🏆 本机排行榜</div>
+          <button class="icon-btn" id="closeRank">✕</button>
+        </div>
+        <div class="panel-bd">
+          <div class="rank-meta" id="rankMeta"></div>
+          <ol class="rank-list" id="rankList"></ol>
+        </div>
+      </div>
 
-// ============ 全局状态 ============
-let score = 0;
-let combo = 0;
-let comboTimer = null;
-let lastComfort = -1;
-const game = document.getElementById("game");
-const scoreEl = document.getElementById("score");
+      <button class="float-btn" id="rankBtn">🏆 排行榜</button>
+    </main>
 
-// ============ 生成星空 ============
-(function initStars() {
-  const container = document.getElementById("stars");
-  for (let i = 0; i < 80; i++) {
-    const s = document.createElement("div");
-    s.className = "star";
-    s.style.left = Math.random() * 100 + "%";
-    s.style.top = Math.random() * 100 + "%";
-    s.style.setProperty("--dur", (1.5 + Math.random() * 3) + "s");
-    s.style.animationDelay = Math.random() * 3 + "s";
-    s.style.width = s.style.height = (1 + Math.random() * 2) + "px";
-    container.appendChild(s);
-  }
-})();
+    <footer class="footer">
+      <div class="tiny">
+        小提示：生成分享图后「保存图片」发朋友圈/群聊，会更容易传播。
+      </div>
+    </footer>
+  </div>
 
-// ============ 创建气球SVG ============
-function createBalloonSVG(theme) {
-  return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
-    <defs>
-      <radialGradient id="g${theme.body.slice(1)}" cx="35%" cy="30%" r="65%">
-        <stop offset="0%" stop-color="${theme.shine}"/>
-        <stop offset="70%" stop-color="${theme.body}"/>
-        <stop offset="100%" stop-color="${theme.shadow}"/>
-      </radialGradient>
-    </defs>
-    <ellipse cx="50" cy="55" rx="38" ry="46"
-      fill="url(#g${theme.body.slice(1)})" />
-    <ellipse cx="38" cy="38" rx="10" ry="14"
-      fill="rgba(255,255,255,.25)" transform="rotate(-25,38,38)" />
-    <polygon points="50,100 44,110 56,110" fill="${theme.shadow}" />
-    <line x1="50" y1="110" x2="50" y2="138"
-      stroke="rgba(255,255,255,.4)" stroke-width="1.2"
-      stroke-dasharray="3,2" />
-  </svg>`;
-}
+  <!-- 海报弹层 -->
+  <div class="modal" id="posterModal" hidden>
+    <div class="modal-card">
+      <div class="modal-hd">
+        <div class="modal-title">📸 朋友圈分享图</div>
+        <button class="icon-btn" id="closePoster">✕</button>
+      </div>
+      <div class="modal-bd">
+        <canvas id="posterCanvas" width="900" height="1200"></canvas>
+        <div class="modal-actions">
+          <button class="btn ghost" id="downloadPoster">保存图片</button>
+          <button class="btn" id="copyLink">复制游戏链接</button>
+        </div>
+        <div class="small" id="copyTip"></div>
+      </div>
+    </div>
+  </div>
 
-// ============ 生成气球 ============
-function spawnBalloon() {
-  const theme = BALLOON_THEMES[Math.floor(Math.random() * BALLOON_THEMES.length)];
-  const size = 60 + Math.random() * 40; // 60-100px
-  const el = document.createElement("div");
-  el.className = "balloon";
-  el.innerHTML = createBalloonSVG(theme);
-  el.style.width = size + "px";
-  el.style.height = (size * 1.4) + "px";
-  el.style.left = (8 + Math.random() * 78) + "vw";
-  el.style.bottom = -(size * 1.5) + "px";
-
-  const speed = 5 + Math.random() * 6; // 5-11s
-  el.style.setProperty("--speed", speed + "s");
-  el.style.setProperty("--sway-start", (Math.random() * 10 - 5) + "deg");
-  el.style.setProperty("--sway-mid", (Math.random() * 10 - 5) + "deg");
-
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    popBalloon(el, theme);
-  });
-
-  game.appendChild(el);
-
-  // 飘出屏幕后移除
-  el.addEventListener("animationend", () => el.remove());
-}
-
-// ============ 爆炸效果 ============
-function popBalloon(el, theme) {
-  const rect = el.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-
-  // 移除气球
-  el.style.pointerEvents = "none";
-  el.remove();
-
-  // 更新分数 & 连击
-  score++;
-  scoreEl.textContent = score;
-  scoreEl.style.transform = "scale(1.3)";
-  setTimeout(() => scoreEl.style.transform = "scale(1)", 150);
-
-  combo++;
-  clearTimeout(comboTimer);
-  comboTimer = setTimeout(() => combo = 0, 1500);
-
-  // 连击提示
-  if (combo >= 3) {
-    showCombo(cx, cy, combo);
-  }
-
-  // 爆炸闪光
-  const flash = document.createElement("div");
-  flash.className = "flash";
-  flash.style.left = cx + "px";
-  flash.style.top = cy + "px";
-  game.appendChild(flash);
-  flash.addEventListener("animationend", () => flash.remove());
-
-  // 爆炸粒子
-  const explosion = document.createElement("div");
-  explosion.className = "explosion";
-  explosion.style.left = cx + "px";
-  explosion.style.top = cy + "px";
-  const colors = [theme.body, theme.shine, theme.shadow, "#fff"];
-  for (let i = 0; i < 16; i++) {
-    const p = document.createElement("div");
-    p.className = "particle";
-    const angle = (Math.PI * 2 / 16) * i + Math.random() * 0.4;
-    const dist = 40 + Math.random() * 70;
-    p.style.setProperty("--tx", Math.cos(angle) * dist + "px");
-    p.style.setProperty("--ty", Math.sin(angle) * dist + "px");
-    p.style.width = p.style.height = (3 + Math.random() * 6) + "px";
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    explosion.appendChild(p);
-  }
-  game.appendChild(explosion);
-  setTimeout(() => explosion.remove(), 700);
-
-  // 音效（合成）
-  playPop();
-
-  // 显示安慰语
-  showComfort();
-}
-
-// ============ 连击提示 ============
-function showCombo(x, y, count) {
-  const el = document.createElement("div");
-  el.className = "combo";
-  el.textContent = `🔥 ${count} 连击！`;
-  el.style.left = x + "px";
-  el.style.top = (y - 30) + "px";
-  document.body.appendChild(el);
-  el.addEventListener("animationend", () => el.remove());
-}
-
-// ============ 安慰语卡片 ============
-function showComfort() {
-  // 去掉已有卡片
-  document.querySelectorAll(".comfort-card").forEach(c => {
-    c.classList.add("out");
-    setTimeout(() => c.remove(), 350);
-  });
-
-  // 随机不重复
-  let idx;
-  do { idx = Math.floor(Math.random() * COMFORTS.length); } while (idx === lastComfort);
-  lastComfort = idx;
-  const item = COMFORTS[idx];
-
-  const card = document.createElement("div");
-  card.className = "comfort-card";
-  card.innerHTML = `
-    <div class="emoji">${item.emoji}</div>
-    <div class="text">${item.text}</div>
-    <div class="hint">点击任意处关闭 · 继续戳气球吧</div>
-  `;
-  document.body.appendChild(card);
-
-  // 撒彩带
-  spawnConfetti();
-
-  // 点击关闭
-  const close = (e) => {
-    if (e.target.closest(".balloon")) return;
-    card.classList.add("out");
-    setTimeout(() => card.remove(), 350);
-    document.removeEventListener("click", close);
-  };
-  setTimeout(() => document.addEventListener("click", close), 100);
-
-  // 自动关闭
-  setTimeout(() => {
-    if (card.parentNode) {
-      card.classList.add("out");
-      setTimeout(() => card.remove(), 350);
-      document.removeEventListener("click", close);
-    }
-  }, 3500);
-}
-
-// ============ 撒彩带 ============
-function spawnConfetti() {
-  const colors = ["#FF6B8A","#7C5CFC","#00C9A7","#FFB347","#FF6F61","#4FC3F7","#E040FB","#FFD54F"];
-  for (let i = 0; i < 25; i++) {
-    const c = document.createElement("div");
-    c.className = "confetti";
-    c.style.left = (10 + Math.random() * 80) + "vw";
-    c.style.top = -10 + "px";
-    c.style.background = colors[Math.floor(Math.random() * colors.length)];
-    c.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
-    c.style.width = (5 + Math.random() * 8) + "px";
-    c.style.height = (8 + Math.random() * 12) + "px";
-    c.style.setProperty("--cf-dur", (1.5 + Math.random() * 2) + "s");
-    c.style.setProperty("--cf-rot", (360 + Math.random() * 720) + "deg");
-    c.style.animationDelay = (Math.random() * 0.3) + "s";
-    document.body.appendChild(c);
-    c.addEventListener("animationend", () => c.remove());
-  }
-}
-
-// ============ 合成音效 ============
-function playPop() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // 噪声爆破
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
-    }
-    const noise = ctx.createBufferSource();
-    noise.buffer = buf;
-    // 高通滤波
-    const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 1200;
-    // 增益
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
-    noise.connect(hp).connect(gain).connect(ctx.destination);
-    noise.start();
-    noise.stop(ctx.currentTime + 0.08);
-    // 短延迟关闭
-    setTimeout(() => ctx.close(), 200);
-  } catch(e) {}
-}
-
-// ============ 气球生成循环 ============
-let spawnInterval = 900;
-
-function scheduleSpawn() {
-  spawnBalloon();
-  // 随着分数增加，加快生成速度
-  const interval = Math.max(400, spawnInterval - score * 8);
-  setTimeout(scheduleSpawn, interval + Math.random() * 400);
-}
-
-// 初始快速生成几个
-for (let i = 0; i < 4; i++) {
-  setTimeout(() => spawnBalloon(), i * 300);
-}
-setTimeout(scheduleSpawn, 1500);
-</script>
-
+  <script src="./script.js"></script>
 </body>
 </html>
