@@ -2,495 +2,1232 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>🎈 点击气球 · 收获温暖</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>🎈 戳破烦恼 · 收获温暖</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
 
-  body {
-    width: 100vw; height: 100vh;
-    overflow: hidden;
-    background: linear-gradient(180deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
-    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    cursor: crosshair;
-    user-select: none;
-  }
+:root {
+  --bg1: #0f0c29; --bg2: #302b63; --bg3: #24243e;
+  --accent: #ffc371; --pink: #ff6bc1; --mint: #a8e6cf;
+}
 
-  /* ===== 星空背景 ===== */
-  .stars { position: fixed; inset: 0; pointer-events: none; }
-  .star {
-    position: absolute;
-    width: 2px; height: 2px;
-    background: #fff;
-    border-radius: 50%;
-    animation: twinkle var(--dur) ease-in-out infinite alternate;
-  }
-  @keyframes twinkle { 0% { opacity: .2; } 100% { opacity: 1; } }
+body {
+  width: 100vw; height: 100vh; overflow: hidden;
+  background: linear-gradient(180deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+  font-family: "PingFang SC","Hiragino Sans GB","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  cursor: crosshair; user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+body.shake { animation: screenShake .3s ease-out; }
+@keyframes screenShake {
+  0%,100% { transform: translate(0,0); }
+  15% { transform: translate(-4px, 3px); }
+  30% { transform: translate(3px, -4px); }
+  45% { transform: translate(-3px, 2px); }
+  60% { transform: translate(4px, -2px); }
+  75% { transform: translate(-2px, 3px); }
+}
+body.mega-shake { animation: megaShake .45s ease-out; }
+@keyframes megaShake {
+  0%,100% { transform: translate(0,0); }
+  10% { transform: translate(-8px, 6px) rotate(-0.5deg); }
+  20% { transform: translate(7px, -8px) rotate(0.5deg); }
+  30% { transform: translate(-6px, 4px); }
+  40% { transform: translate(8px, -3px) rotate(-0.3deg); }
+  50% { transform: translate(-5px, 7px); }
+  60% { transform: translate(6px, -5px) rotate(0.3deg); }
+  70% { transform: translate(-4px, 3px); }
+  80% { transform: translate(3px, -4px); }
+}
 
-  /* ===== 顶部标题 ===== */
-  .header {
-    position: fixed; top: 0; left: 0; right: 0;
-    text-align: center; padding: 24px 16px 12px;
-    z-index: 100;
-    pointer-events: none;
-  }
-  .header h1 {
-    font-size: 28px; font-weight: 700;
-    background: linear-gradient(135deg, #ff6bc1, #ffc371, #a8e6cf);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    text-shadow: none;
-    letter-spacing: 2px;
-  }
-  .header .sub {
-    color: rgba(255,255,255,.45); font-size: 13px; margin-top: 6px;
-  }
+/* ===== Canvas 背景（星空+流星） ===== */
+#bgCanvas { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
 
-  /* ===== 计分板 ===== */
-  .score-board {
-    position: fixed; top: 20px; right: 24px;
-    background: rgba(255,255,255,.08);
-    backdrop-filter: blur(12px);
-    border: 1px solid rgba(255,255,255,.12);
-    border-radius: 16px;
-    padding: 14px 22px;
-    color: #fff; z-index: 100;
-    pointer-events: none;
-  }
-  .score-board .label { font-size: 11px; color: rgba(255,255,255,.5); letter-spacing: 1px; }
-  .score-board .num { font-size: 32px; font-weight: 800; line-height: 1.1; }
+/* ===== 顶部标题 ===== */
+.header {
+  position: fixed; top: 0; left: 0; right: 0;
+  text-align: center; padding: 20px 16px 8px; z-index: 100;
+  pointer-events: none;
+}
+.header h1 {
+  font-size: clamp(22px, 5vw, 32px); font-weight: 800;
+  background: linear-gradient(135deg, var(--pink), var(--accent), var(--mint));
+  background-size: 200% 200%;
+  animation: gradientShift 4s ease infinite;
+  -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  letter-spacing: 2px;
+}
+@keyframes gradientShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+.header .sub {
+  color: rgba(255,255,255,.4); font-size: 12px; margin-top: 4px; letter-spacing: 1px;
+}
 
-  /* ===== 气球 ===== */
-  .balloon {
-    position: absolute;
-    cursor: pointer;
-    transition: filter .15s;
-    animation: floatUp var(--speed) linear forwards;
-    z-index: 10;
-    filter: drop-shadow(0 8px 24px rgba(0,0,0,.35));
-  }
-  .balloon:hover { filter: brightness(1.25) drop-shadow(0 8px 32px rgba(255,255,255,.2)); transform: scale(1.08); }
+/* ===== 统计面板 ===== */
+.stats-panel {
+  position: fixed; top: 16px; right: 16px;
+  display: flex; gap: 10px; z-index: 100; pointer-events: none;
+}
+.stat-box {
+  background: rgba(255,255,255,.06);
+  backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 16px; padding: 10px 18px;
+  color: #fff; text-align: center;
+  min-width: 72px;
+}
+.stat-box .label {
+  font-size: 10px; color: rgba(255,255,255,.4);
+  letter-spacing: 1.5px; text-transform: uppercase;
+}
+.stat-box .num {
+  font-size: 28px; font-weight: 800; line-height: 1.2;
+  transition: transform .15s;
+}
+.stat-box .num.pop { transform: scale(1.35); }
+.stat-box.combo-box { border-color: rgba(255,195,113,.3); }
+.stat-box.combo-box .num { color: var(--accent); }
 
-  .balloon svg { width: 100%; height: 100%; }
+/* ===== 气球 ===== */
+.balloon {
+  position: absolute; cursor: pointer;
+  animation: floatUp var(--speed) linear forwards;
+  z-index: 10;
+  filter: drop-shadow(0 8px 20px rgba(0,0,0,.3));
+  transition: filter .12s, transform .12s;
+  will-change: transform;
+}
+.balloon:hover {
+  filter: brightness(1.2) drop-shadow(0 12px 32px rgba(255,255,255,.15));
+  transform: scale(1.1);
+}
+.balloon:active { transform: scale(0.95); }
+.balloon svg { width: 100%; height: 100%; }
 
-  @keyframes floatUp {
-    0%   { transform: translateY(0) rotate(var(--sway-start)); opacity: 1; }
-    25%  { transform: translateY(-25vh) rotate(var(--sway-mid)); }
-    50%  { transform: translateY(-50vh) rotate(var(--sway-start)); }
-    75%  { transform: translateY(-75vh) rotate(var(--sway-mid)); }
-    100% { transform: translateY(-110vh) rotate(var(--sway-start)); opacity: 0; }
-  }
+@keyframes floatUp {
+  0%   { transform: translateY(0) rotate(var(--r1)) scale(var(--s,1)); opacity: 1; }
+  15%  { transform: translateY(-15vh) rotate(var(--r2)) scale(var(--s,1)); }
+  30%  { transform: translateY(-30vh) rotate(var(--r1)) scale(var(--s,1)); }
+  50%  { transform: translateY(-50vh) rotate(var(--r3)) scale(var(--s,1)); }
+  70%  { transform: translateY(-70vh) rotate(var(--r1)) scale(var(--s,1)); }
+  85%  { transform: translateY(-85vh) rotate(var(--r2)) scale(var(--s,1)); }
+  100% { transform: translateY(-115vh) rotate(var(--r3)) scale(var(--s,1)); opacity: 0; }
+}
 
-  /* ===== 爆炸粒子 ===== */
-  .explosion {
-    position: absolute;
-    pointer-events: none;
-    z-index: 50;
-  }
-  .particle {
-    position: absolute;
-    border-radius: 50%;
-    animation: burst .65s cubic-bezier(.25,.46,.45,.94) forwards;
-  }
-  @keyframes burst {
-    0%   { transform: translate(0,0) scale(1); opacity: 1; }
-    100% { transform: translate(var(--tx), var(--ty)) scale(0); opacity: 0; }
-  }
+/* ===== 爆炸系统 ===== */
+.explosion-layer { position: fixed; inset: 0; pointer-events: none; z-index: 50; }
 
-  /* 爆炸闪光 */
-  .flash {
-    position: absolute;
-    width: 80px; height: 80px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(255,255,255,.9) 0%, rgba(255,255,255,0) 70%);
-    animation: flashAnim .35s ease-out forwards;
-    pointer-events: none;
-    z-index: 49;
-  }
-  @keyframes flashAnim {
-    0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
-    100% { transform: translate(-50%,-50%) scale(2.5); opacity: 0; }
-  }
+/* 冲击波 */
+.shockwave {
+  position: absolute; border-radius: 50%;
+  border: 2px solid rgba(255,255,255,.5);
+  animation: shockwaveExpand .5s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes shockwaveExpand {
+  0%   { width: 0; height: 0; opacity: .8; transform: translate(-50%,-50%); }
+  100% { width: 200px; height: 200px; opacity: 0; transform: translate(-50%,-50%); }
+}
+.shockwave.big {
+  border-width: 3px;
+  animation-name: shockwaveBig;
+  border-color: rgba(255,195,113,.6);
+}
+@keyframes shockwaveBig {
+  0%   { width: 0; height: 0; opacity: 1; transform: translate(-50%,-50%); }
+  100% { width: 350px; height: 350px; opacity: 0; transform: translate(-50%,-50%); }
+}
 
-  /* ===== 安慰语卡片 ===== */
-  .comfort-card {
-    position: fixed;
-    left: 50%; top: 50%;
-    transform: translate(-50%, -50%) scale(0);
-    background: rgba(255,255,255,.1);
-    backdrop-filter: blur(20px);
-    border: 1px solid rgba(255,255,255,.18);
-    border-radius: 24px;
-    padding: 40px 48px;
-    text-align: center;
-    z-index: 200;
-    max-width: 420px;
-    width: 88vw;
-    animation: cardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
-  }
-  .comfort-card.out { animation: cardOut .35s ease-in forwards; }
+/* 闪光 */
+.flash {
+  position: absolute; width: 60px; height: 60px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255,255,255,.95) 0%, transparent 70%);
+  animation: flashPulse .3s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes flashPulse {
+  0%   { transform: translate(-50%,-50%) scale(0); opacity: 1; }
+  50%  { transform: translate(-50%,-50%) scale(2); opacity: .8; }
+  100% { transform: translate(-50%,-50%) scale(3); opacity: 0; }
+}
 
-  @keyframes cardIn {
-    0%   { transform: translate(-50%,-50%) scale(0) rotate(-5deg); opacity: 0; }
-    100% { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
-  }
-  @keyframes cardOut {
-    0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; }
-    100% { transform: translate(-50%,-50%) scale(.8) translateY(30px); opacity: 0; }
-  }
+/* 粒子 — 圆形 */
+.p-circle {
+  position: absolute; border-radius: 50%;
+  animation: burstOut var(--dur,.6s) cubic-bezier(.15,.6,.35,1) forwards;
+}
+/* 粒子 — 方形碎片 */
+.p-shard {
+  position: absolute; border-radius: 2px;
+  animation: burstSpin var(--dur,.7s) cubic-bezier(.15,.6,.35,1) forwards;
+}
+/* 粒子 — 星星 */
+.p-star {
+  position: absolute;
+  animation: burstOut var(--dur,.65s) cubic-bezier(.15,.6,.35,1) forwards;
+}
+/* 粒子 — 气球碎片 */
+.p-fragment {
+  position: absolute; border-radius: 40%;
+  animation: fragmentFall var(--dur,.9s) ease-in forwards;
+}
 
-  .comfort-card .emoji { font-size: 48px; margin-bottom: 16px; }
-  .comfort-card .text {
-    font-size: 20px; line-height: 1.7;
-    color: #fff;
-    font-weight: 500;
-  }
-  .comfort-card .hint {
-    margin-top: 18px;
-    font-size: 12px;
-    color: rgba(255,255,255,.35);
-  }
+@keyframes burstOut {
+  0%   { transform: translate(0,0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx),var(--ty)) scale(0); opacity: 0; }
+}
+@keyframes burstSpin {
+  0%   { transform: translate(0,0) rotate(0deg) scale(1); opacity: 1; }
+  100% { transform: translate(var(--tx),var(--ty)) rotate(var(--rot,360deg)) scale(0); opacity: 0; }
+}
+@keyframes fragmentFall {
+  0%   { transform: translate(0,0) rotate(0deg) scale(1); opacity: .9; }
+  40%  { opacity: .7; }
+  100% { transform: translate(var(--tx), var(--fy,120px)) rotate(var(--rot,180deg)) scale(.3); opacity: 0; }
+}
 
-  /* ===== 彩带/纸屑 ===== */
-  .confetti {
-    position: fixed;
-    width: 8px; height: 14px;
-    z-index: 199;
-    animation: confettiFall var(--cf-dur) linear forwards;
-    pointer-events: none;
-  }
-  @keyframes confettiFall {
-    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(100vh) rotate(var(--cf-rot)); opacity: 0; }
-  }
+/* 拖尾光线 */
+.light-trail {
+  position: absolute; width: 2px; border-radius: 1px;
+  transform-origin: center top;
+  animation: trailFade .4s ease-out forwards;
+  pointer-events: none;
+}
+@keyframes trailFade {
+  0%   { height: 0; opacity: .8; }
+  40%  { height: var(--len, 30px); opacity: .6; }
+  100% { height: var(--len, 30px); opacity: 0; }
+}
 
-  /* ===== 连击提示 ===== */
-  .combo {
-    position: fixed;
-    font-size: 22px; font-weight: 800;
-    color: #ffc371;
-    pointer-events: none;
-    z-index: 150;
-    animation: comboPop .8s ease-out forwards;
-    text-shadow: 0 2px 12px rgba(255,195,113,.6);
-  }
-  @keyframes comboPop {
-    0%   { transform: translate(-50%,-50%) scale(0); opacity: 0; }
-    30%  { transform: translate(-50%,-50%) scale(1.3); opacity: 1; }
-    100% { transform: translate(-50%, calc(-50% - 60px)) scale(1); opacity: 0; }
-  }
+/* ===== 安慰语卡片 ===== */
+.comfort-card {
+  position: fixed; left: 50%; top: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  background: rgba(255,255,255,.08);
+  backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255,255,255,.15);
+  border-radius: 28px;
+  padding: 36px 40px 28px;
+  text-align: center; z-index: 200;
+  max-width: 400px; width: 88vw;
+  animation: cardIn .5s cubic-bezier(.34,1.56,.64,1) forwards;
+  box-shadow: 0 20px 60px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.1);
+}
+.comfort-card.out { animation: cardOut .3s ease-in forwards; }
+@keyframes cardIn {
+  0%   { transform: translate(-50%,-50%) scale(0) rotate(-5deg); opacity: 0; }
+  100% { transform: translate(-50%,-50%) scale(1) rotate(0deg); opacity: 1; }
+}
+@keyframes cardOut {
+  0%   { transform: translate(-50%,-50%) scale(1); opacity: 1; }
+  100% { transform: translate(-50%,-50%) scale(.85) translateY(20px); opacity: 0; }
+}
+.comfort-card .emoji { font-size: 52px; margin-bottom: 12px; }
+.comfort-card .category-tag {
+  display: inline-block;
+  font-size: 11px; color: rgba(255,255,255,.45);
+  background: rgba(255,255,255,.08);
+  border-radius: 20px; padding: 3px 14px;
+  margin-bottom: 14px; letter-spacing: 1px;
+}
+.comfort-card .text {
+  font-size: 19px; line-height: 1.75; color: #fff; font-weight: 500;
+}
+.comfort-card .author {
+  margin-top: 10px; font-size: 12px;
+  color: rgba(255,255,255,.3); font-style: italic;
+}
+.comfort-card .card-actions {
+  margin-top: 20px;
+  display: flex; gap: 10px; justify-content: center;
+  pointer-events: auto;
+}
+.comfort-card .btn {
+  padding: 8px 20px; border-radius: 20px;
+  font-size: 13px; font-weight: 600;
+  border: none; cursor: pointer;
+  transition: all .2s;
+  display: flex; align-items: center; gap: 6px;
+}
+.comfort-card .btn:active { transform: scale(.95); }
+.btn-share {
+  background: linear-gradient(135deg, var(--pink), #ff9a76);
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(255,107,193,.3);
+}
+.btn-share:hover { box-shadow: 0 6px 24px rgba(255,107,193,.5); transform: translateY(-1px); }
+.btn-close {
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  border: 1px solid rgba(255,255,255,.15);
+}
+.btn-close:hover { background: rgba(255,255,255,.15); }
+
+/* ===== 连击提示 ===== */
+.combo-text {
+  position: fixed; pointer-events: none; z-index: 150;
+  font-weight: 900; text-shadow: 0 2px 20px var(--glow);
+  animation: comboPop .9s ease-out forwards;
+}
+@keyframes comboPop {
+  0%   { transform: translate(-50%,-50%) scale(0) rotate(-10deg); opacity: 0; }
+  25%  { transform: translate(-50%,-50%) scale(1.4) rotate(3deg); opacity: 1; }
+  50%  { transform: translate(-50%,-50%) scale(1.1) rotate(-1deg); }
+  100% { transform: translate(-50%, calc(-50% - 80px)) scale(.9); opacity: 0; }
+}
+
+/* ===== 彩带纸屑 ===== */
+.confetti {
+  position: fixed; z-index: 199; pointer-events: none;
+  animation: confettiFall var(--dur) ease-in forwards;
+}
+@keyframes confettiFall {
+  0%   { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
+  80%  { opacity: .8; }
+  100% { transform: translateY(105vh) rotate(var(--rot)) scale(.6); opacity: 0; }
+}
+
+/* ===== 分享遮罩 ===== */
+.share-overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,.7);
+  backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+  display: flex; align-items: center; justify-content: center;
+  flex-direction: column; gap: 20px;
+  animation: fadeIn .3s ease;
+}
+@keyframes fadeIn { 0% { opacity: 0; } 100% { opacity: 1; } }
+.share-overlay canvas {
+  border-radius: 16px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.5);
+  max-width: 90vw; max-height: 65vh;
+  object-fit: contain;
+}
+.share-actions {
+  display: flex; gap: 12px;
+}
+.share-actions .btn {
+  padding: 12px 28px; border-radius: 24px;
+  font-size: 15px; font-weight: 700;
+  border: none; cursor: pointer;
+  transition: all .2s;
+  display: flex; align-items: center; gap: 8px;
+}
+.share-actions .btn:active { transform: scale(.95); }
+.btn-download {
+  background: linear-gradient(135deg, #56ab2f, #a8e063);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(86,171,47,.4);
+}
+.btn-download:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(86,171,47,.5); }
+.btn-back {
+  background: rgba(255,255,255,.1);
+  color: #fff;
+  border: 1px solid rgba(255,255,255,.2);
+}
+.btn-back:hover { background: rgba(255,255,255,.15); }
+.share-tip {
+  color: rgba(255,255,255,.5); font-size: 13px; text-align: center;
+}
+
+/* ===== 底部引导 ===== */
+.guide {
+  position: fixed; bottom: 20px; left: 0; right: 0;
+  text-align: center; z-index: 100; pointer-events: none;
+  animation: guidePulse 3s ease-in-out infinite;
+}
+.guide span {
+  font-size: 13px; color: rgba(255,255,255,.25);
+  letter-spacing: 1px;
+}
+@keyframes guidePulse {
+  0%,100% { opacity: .5; } 50% { opacity: 1; }
+}
+
+/* ===== 里程碑 ===== */
+.milestone {
+  position: fixed; left: 50%; top: 35%;
+  transform: translate(-50%,-50%) scale(0);
+  font-size: 48px; font-weight: 900;
+  color: #fff; pointer-events: none; z-index: 180;
+  text-shadow: 0 4px 30px rgba(255,195,113,.8);
+  animation: milestoneIn 1.2s cubic-bezier(.34,1.56,.64,1) forwards;
+}
+@keyframes milestoneIn {
+  0%   { transform: translate(-50%,-50%) scale(0) rotate(-15deg); opacity: 0; }
+  30%  { transform: translate(-50%,-50%) scale(1.3) rotate(3deg); opacity: 1; }
+  50%  { transform: translate(-50%,-50%) scale(1) rotate(0deg); }
+  100% { transform: translate(-50%,-50%) scale(.8) translateY(-60px); opacity: 0; }
+}
+
+/* ===== 移动端适配 ===== */
+@media (max-width: 480px) {
+  .stats-panel { top: 10px; right: 10px; gap: 6px; }
+  .stat-box { padding: 6px 12px; border-radius: 12px; min-width: 58px; }
+  .stat-box .num { font-size: 22px; }
+  .stat-box .label { font-size: 9px; }
+  .header { padding: 14px 12px 6px; }
+  .comfort-card { padding: 28px 24px 22px; }
+  .comfort-card .text { font-size: 17px; }
+}
 </style>
 </head>
 <body>
 
-<div class="stars" id="stars"></div>
+<canvas id="bgCanvas"></canvas>
 
 <div class="header">
   <h1>🎈 戳破烦恼 · 收获温暖</h1>
   <div class="sub">点击气球，让烦恼炸裂，让温暖涌来</div>
 </div>
 
-<div class="score-board">
-  <div class="label">POPPED</div>
-  <div class="num" id="score">0</div>
+<div class="stats-panel">
+  <div class="stat-box combo-box" id="comboBox" style="opacity:0;transition:opacity .3s">
+    <div class="label">COMBO</div>
+    <div class="num" id="comboNum">0</div>
+  </div>
+  <div class="stat-box">
+    <div class="label">POPPED</div>
+    <div class="num" id="scoreNum">0</div>
+  </div>
 </div>
 
+<div class="explosion-layer" id="fxLayer"></div>
 <div id="game"></div>
 
+<div class="guide"><span>👆 点击气球，戳破你的小烦恼</span></div>
+
 <script>
-// ============ 安慰语库 ============
+// ═══════════════════════════════════════════════════
+//  100 句治愈语录库（分 8 类）
+// ═══════════════════════════════════════════════════
 const COMFORTS = [
-  { emoji: "🌈", text: "雨后一定会有彩虹的，再坚持一下吧。" },
-  { emoji: "🌟", text: "你已经很棒了，不要对自己太苛刻。" },
-  { emoji: "🍀", text: "好运正在赶来的路上，请保持期待。" },
-  { emoji: "🌻", text: "面朝太阳，阴影就在身后。" },
-  { emoji: "💪", text: "没关系，慢慢来，谁的生活都不容易。" },
-  { emoji: "🤗", text: "想哭就哭吧，哭完了继续做最酷的自己。" },
-  { emoji: "🧸", text: "今天也要好好吃饭，好好睡觉哦。" },
-  { emoji: "🌙", text: "黑夜再长，也终将迎来黎明。" },
-  { emoji: "☀️", text: "你值得被这个世界温柔以待。" },
-  { emoji: "🎵", text: "累了就歇一歇，世界可以等等你。" },
-  { emoji: "🌷", text: "你笑起来真的很好看，多笑笑吧。" },
-  { emoji: "🍵", text: "给自己泡杯热茶，暖暖手，暖暖心。" },
-  { emoji: "📖", text: "所有你经历的，都会变成未来的礼物。" },
-  { emoji: "💌", text: "有人正在偷偷爱着你，你知道吗？" },
-  { emoji: "🎀", text: "不必完美，你已经足够特别了。" },
-  { emoji: "🦋", text: "破茧成蝶需要时间，请耐心等待。" },
-  { emoji: "🏠", text: "回家的路上有灯光在等你。" },
-  { emoji: "🍰", text: "吃一块蛋糕吧，甜食可以治愈一切。" },
-  { emoji: "🐱", text: "你是别人眼中的小太阳，自己却不知道。" },
-  { emoji: "🌊", text: "潮起潮落都是风景，别着急。" },
-  { emoji: "⭐", text: "就算全世界都不理解你，你也要理解自己。" },
-  { emoji: "🎭", text: "偶尔脆弱没关系，那也是真实的你。" },
-  { emoji: "🔥", text: "你内心的火焰，没有人能熄灭。" },
-  { emoji: "🌸", text: "春天来了，花会开，事情会变好的。" },
-  { emoji: "🧡", text: "深呼吸，你比想象中更坚强。" },
+  // ── 鼓励坚持 ──
+  { emoji:"🌈", text:"雨后一定会有彩虹的，再坚持一下吧。", cat:"鼓励坚持" },
+  { emoji:"💪", text:"没关系，慢慢来，谁的生活都不容易。", cat:"鼓励坚持" },
+  { emoji:"🔥", text:"你内心的火焰，没有人能熄灭。", cat:"鼓励坚持" },
+  { emoji:"🧗", text:"每一步都算数，哪怕走得很慢。", cat:"鼓励坚持" },
+  { emoji:"🛤️", text:"路虽远，行则将至；事虽难，做则必成。", cat:"鼓励坚持" },
+  { emoji:"⛰️", text:"翻过这座山，你会看到更美的风景。", cat:"鼓励坚持" },
+  { emoji:"🏃", text:"跑不动就走，走不动就歇，但别放弃。", cat:"鼓励坚持" },
+  { emoji:"🧱", text:"所有伟大的事，都是一点点积累出来的。", cat:"鼓励坚持" },
+  { emoji:"🌱", text:"种子破土之前，没有人看得见它的努力。", cat:"鼓励坚持" },
+  { emoji:"🎯", text:"你比昨天的自己更强了，这就够了。", cat:"鼓励坚持" },
+  { emoji:"🦅", text:"逆风的方向，更适合飞翔。", cat:"鼓励坚持" },
+  { emoji:"💎", text:"钻石也是在高压下才诞生的。", cat:"鼓励坚持" },
+  { emoji:"🌊", text:"大海不会因为一块石头就停止翻涌。", cat:"鼓励坚持" },
+
+  // ── 自我肯定 ──
+  { emoji:"🌟", text:"你已经很棒了，不要对自己太苛刻。", cat:"自我肯定" },
+  { emoji:"🎀", text:"不必完美，你已经足够特别了。", cat:"自我肯定" },
+  { emoji:"👑", text:"你值得拥有世界上所有美好的东西。", cat:"自我肯定" },
+  { emoji:"🪞", text:"照照镜子，里面那个人真的很了不起。", cat:"自我肯定" },
+  { emoji:"🏅", text:"能走到今天，本身就是一种实力。", cat:"自我肯定" },
+  { emoji:"🌻", text:"向日葵不会和别的花比较，你也不必。", cat:"自我肯定" },
+  { emoji:"🦁", text:"你的存在本身，就是一件了不起的事。", cat:"自我肯定" },
+  { emoji:"✨", text:"你身上的光，别人能看见，你自己也要信。", cat:"自我肯定" },
+  { emoji:"🎪", text:"这世上只有一个你，独一无二，无可替代。", cat:"自我肯定" },
+  { emoji:"🧩", text:"你不是拼图里缺失的那块，你是完整的。", cat:"自我肯定" },
+  { emoji:"💐", text:"你不需要得到所有人的认可，你自己喜欢自己就好。", cat:"自我肯定" },
+  { emoji:"🌹", text:"你配得上你所有的梦想。", cat:"自我肯定" },
+
+  // ── 温暖治愈 ──
+  { emoji:"☀️", text:"你值得被这个世界温柔以待。", cat:"温暖治愈" },
+  { emoji:"💌", text:"有人正在偷偷爱着你，你知道吗？", cat:"温暖治愈" },
+  { emoji:"🏠", text:"回家的路上有灯光在等你。", cat:"温暖治愈" },
+  { emoji:"🐱", text:"你是别人眼中的小太阳，自己却不知道。", cat:"温暖治愈" },
+  { emoji:"🧸", text:"今天也要好好吃饭，好好睡觉哦。", cat:"温暖治愈" },
+  { emoji:"🤗", text:"给你一个隔着屏幕的大大拥抱。", cat:"温暖治愈" },
+  { emoji:"🌷", text:"你笑起来真的很好看，多笑笑吧。", cat:"温暖治愈" },
+  { emoji:"🍵", text:"给自己泡杯热茶，暖暖手，暖暖心。", cat:"温暖治愈" },
+  { emoji:"🕯️", text:"就算只是一束微光，也足以温暖一整个冬天。", cat:"温暖治愈" },
+  { emoji:"🧣", text:"天冷记得加衣服，有人惦记着你。", cat:"温暖治愈" },
+  { emoji:"🌼", text:"你是这个世界上最柔软的存在。", cat:"温暖治愈" },
+  { emoji:"🐾", text:"总有人在你看不见的地方默默关心你。", cat:"温暖治愈" },
+  { emoji:"☕", text:"生活苦的时候，记得给自己加点糖。", cat:"温暖治愈" },
+
+  // ── 释然放下 ──
+  { emoji:"🍃", text:"放下不是认输，是为了更好地前行。", cat:"释然放下" },
+  { emoji:"🎭", text:"偶尔脆弱没关系，那也是真实的你。", cat:"释然放下" },
+  { emoji:"🌊", text:"潮起潮落都是风景，别着急。", cat:"释然放下" },
+  { emoji:"🤷", text:"有些事情，想不通就别想了，去吃好吃的吧。", cat:"释然放下" },
+  { emoji:"🎐", text:"风铃不怕风吹，反而会唱出好听的歌。", cat:"释然放下" },
+  { emoji:"🧘", text:"深呼吸三次，让一切随风去吧。", cat:"释然放下" },
+  { emoji:"🕊️", text:"该来的会来，该走的别留，一切随缘。", cat:"释然放下" },
+  { emoji:"🍂", text:"叶子落了是为了来年更好地生长。", cat:"释然放下" },
+  { emoji:"🌅", text:"别回头看了，你又不往那个方向走。", cat:"释然放下" },
+  { emoji:"🎈", text:"像气球一样，松开手，让烦恼飞走。", cat:"释然放下" },
+  { emoji:"🪶", text:"轻装上阵，才能走得更远。", cat:"释然放下" },
+  { emoji:"🌬️", text:"风会带走所有不属于你的东西。", cat:"释然放下" },
+
+  // ── 未来可期 ──
+  { emoji:"🍀", text:"好运正在赶来的路上，请保持期待。", cat:"未来可期" },
+  { emoji:"🌸", text:"春天来了，花会开，事情会变好的。", cat:"未来可期" },
+  { emoji:"🌙", text:"黑夜再长，也终将迎来黎明。", cat:"未来可期" },
+  { emoji:"📖", text:"所有你经历的，都会变成未来的礼物。", cat:"未来可期" },
+  { emoji:"🦋", text:"破茧成蝶需要时间，请耐心等待。", cat:"未来可期" },
+  { emoji:"🎆", text:"你的人生有无限可能，请不要限制自己。", cat:"未来可期" },
+  { emoji:"🚀", text:"今天的蛰伏，是为了明天更好地起飞。", cat:"未来可期" },
+  { emoji:"🌏", text:"世界很大，你的舞台不止眼前这一小块。", cat:"未来可期" },
+  { emoji:"🔮", text:"最好的还在后面，你只管往前走。", cat:"未来可期" },
+  { emoji:"🎁", text:"生活会在不经意间给你准备惊喜。", cat:"未来可期" },
+  { emoji:"🗝️", text:"每一段低谷，都是通往山顶的必经之路。", cat:"未来可期" },
+  { emoji:"🧭", text:"迷路也没关系，风景说不定更美。", cat:"未来可期" },
+  { emoji:"🌤️", text:"阴天之后，一定是晴天。", cat:"未来可期" },
+
+  // ── 享受当下 ──
+  { emoji:"🎵", text:"累了就歇一歇，世界可以等等你。", cat:"享受当下" },
+  { emoji:"🍰", text:"吃一块蛋糕吧，甜食可以治愈一切。", cat:"享受当下" },
+  { emoji:"🎶", text:"戴上耳机，听首喜欢的歌，世界会安静下来。", cat:"享受当下" },
+  { emoji:"🌃", text:"今晚的月亮很美，记得抬头看看。", cat:"享受当下" },
+  { emoji:"📸", text:"记录今天的小确幸，未来回看会笑的。", cat:"享受当下" },
+  { emoji:"🛁", text:"泡个热水澡，所有烦恼都会被蒸发掉。", cat:"享受当下" },
+  { emoji:"🎮", text:"偶尔放纵一下也没关系，你值得快乐。", cat:"享受当下" },
+  { emoji:"🌺", text:"停下来闻闻花香，生活不只有赶路。", cat:"享受当下" },
+  { emoji:"😴", text:"困了就睡吧，明天又是新的一天。", cat:"享受当下" },
+  { emoji:"🎨", text:"去做一件让自己开心的事，现在，立刻。", cat:"享受当下" },
+  { emoji:"🧁", text:"人生苦短，先吃甜的。", cat:"享受当下" },
+  { emoji:"🐶", text:"去撸撸猫、遛遛狗，毛茸茸的东西最治愈。", cat:"享受当下" },
+
+  // ── 人际温情 ──
+  { emoji:"👫", text:"你不是一个人在战斗，身后有人呢。", cat:"人际温情" },
+  { emoji:"💕", text:"被讨厌也没关系，喜欢你的人超级喜欢你。", cat:"人际温情" },
+  { emoji:"🤝", text:"不开心就找人聊聊，别一个人扛着。", cat:"人际温情" },
+  { emoji:"📱", text:"给好久没联系的朋友发条消息吧。", cat:"人际温情" },
+  { emoji:"🫂", text:"你不必假装坚强，在我面前可以做自己。", cat:"人际温情" },
+  { emoji:"🎂", text:"在乎你的人，比你以为的要多得多。", cat:"人际温情" },
+  { emoji:"💬", text:"你说的每一句话，都有人认真在听。", cat:"人际温情" },
+  { emoji:"🌍", text:"这个世界上，有人和你经历着一样的事。", cat:"人际温情" },
+  { emoji:"🏡", text:"再累，也有一个地方叫做家，在等你回去。", cat:"人际温情" },
+  { emoji:"❤️", text:"你是被爱着的，只是有时候感觉不到而已。", cat:"人际温情" },
+  { emoji:"🥂", text:"等这阵子过去，我们一起喝一杯庆祝。", cat:"人际温情" },
+
+  // ── 智慧哲理 ──
+  { emoji:"⭐", text:"就算全世界都不理解你，你也要理解自己。", cat:"智慧哲理" },
+  { emoji:"🧡", text:"深呼吸，你比想象中更坚强。", cat:"智慧哲理" },
+  { emoji:"🌻", text:"面朝太阳，阴影就在身后。", cat:"智慧哲理" },
+  { emoji:"🪴", text:"允许一切发生，是一种了不起的能力。", cat:"智慧哲理" },
+  { emoji:"⏳", text:"时间会证明，现在的一切都是最好的安排。", cat:"智慧哲理" },
+  { emoji:"🌗", text:"月有阴晴圆缺，人生也是，不必太在意。", cat:"智慧哲理" },
+  { emoji:"🔑", text:"打不开的锁，换把钥匙就好了。", cat:"智慧哲理" },
+  { emoji:"🎲", text:"人生没有白走的路，每一步都作数。", cat:"智慧哲理" },
+  { emoji:"📐", text:"弯路也是路，弯路上的风景也很美。", cat:"智慧哲理" },
+  { emoji:"🪷", text:"心若向阳，无谓悲伤。", cat:"智慧哲理" },
+  { emoji:"🍷", text:"难过的事情，就像酒一样，放一放就淡了。", cat:"智慧哲理" },
+  { emoji:"🧠", text:"你焦虑的事情，90%都不会发生。", cat:"智慧哲理" },
+  { emoji:"🌓", text:"没有永远的黑夜，也没有永远的冬天。", cat:"智慧哲理" },
 ];
 
-// ============ 气球颜色组 ============
-const BALLOON_THEMES = [
-  { body: "#FF6B8A", shine: "#FF9DB5", shadow: "#D44E6C" },
-  { body: "#7C5CFC", shine: "#A48DFF", shadow: "#5A3DD4" },
-  { body: "#00C9A7", shine: "#5EECD5", shadow: "#009E82" },
-  { body: "#FFB347", shine: "#FFD08A", shadow: "#D48E2E" },
-  { body: "#FF6F61", shine: "#FF9A91", shadow: "#D44F43" },
-  { body: "#4FC3F7", shine: "#81D4FA", shadow: "#2196D3" },
-  { body: "#E040FB", shine: "#EA80FC", shadow: "#AB00D9" },
-  { body: "#69F0AE", shine: "#B9F6CA", shadow: "#3DDC84" },
-  { body: "#FF8A80", shine: "#FFB3AD", shadow: "#D46456" },
-  { body: "#FFD54F", shine: "#FFE97D", shadow: "#C9A825" },
+// ═══════════════════════════════════════
+//  气球配色
+// ═══════════════════════════════════════
+const THEMES = [
+  { body:"#FF6B8A", shine:"#FF9DB5", shadow:"#D44E6C", glow:"rgba(255,107,138,.4)" },
+  { body:"#7C5CFC", shine:"#A48DFF", shadow:"#5A3DD4", glow:"rgba(124,92,252,.4)" },
+  { body:"#00C9A7", shine:"#5EECD5", shadow:"#009E82", glow:"rgba(0,201,167,.4)" },
+  { body:"#FFB347", shine:"#FFD08A", shadow:"#D48E2E", glow:"rgba(255,179,71,.4)" },
+  { body:"#FF6F61", shine:"#FF9A91", shadow:"#D44F43", glow:"rgba(255,111,97,.4)" },
+  { body:"#4FC3F7", shine:"#81D4FA", shadow:"#2196D3", glow:"rgba(79,195,247,.4)" },
+  { body:"#E040FB", shine:"#EA80FC", shadow:"#AB00D9", glow:"rgba(224,64,251,.4)" },
+  { body:"#69F0AE", shine:"#B9F6CA", shadow:"#3DDC84", glow:"rgba(105,240,174,.4)" },
+  { body:"#FF8A80", shine:"#FFB3AD", shadow:"#D46456", glow:"rgba(255,138,128,.4)" },
+  { body:"#FFD54F", shine:"#FFE97D", shadow:"#C9A825", glow:"rgba(255,213,79,.4)" },
+  { body:"#F48FB1", shine:"#F8BBD0", shadow:"#C2185B", glow:"rgba(244,143,177,.4)" },
+  { body:"#80DEEA", shine:"#B2EBF2", shadow:"#00ACC1", glow:"rgba(128,222,234,.4)" },
 ];
 
-// ============ 全局状态 ============
-let score = 0;
-let combo = 0;
-let comboTimer = null;
-let lastComfort = -1;
+// ═══════════════════════════════════════
+//  全局状态
+// ═══════════════════════════════════════
+let score = 0, combo = 0, maxCombo = 0, comboTimer = null, lastIdx = -1;
+let startTime = Date.now();
 const game = document.getElementById("game");
-const scoreEl = document.getElementById("score");
+const fxLayer = document.getElementById("fxLayer");
+const scoreNum = document.getElementById("scoreNum");
+const comboNum = document.getElementById("comboNum");
+const comboBox = document.getElementById("comboBox");
+let currentComfort = null; // 当前显示的安慰语
 
-// ============ 生成星空 ============
-(function initStars() {
-  const container = document.getElementById("stars");
-  for (let i = 0; i < 80; i++) {
-    const s = document.createElement("div");
-    s.className = "star";
-    s.style.left = Math.random() * 100 + "%";
-    s.style.top = Math.random() * 100 + "%";
-    s.style.setProperty("--dur", (1.5 + Math.random() * 3) + "s");
-    s.style.animationDelay = Math.random() * 3 + "s";
-    s.style.width = s.style.height = (1 + Math.random() * 2) + "px";
-    container.appendChild(s);
+// 复用 AudioContext
+let audioCtx = null;
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  return audioCtx;
+}
+
+// ═══════════════════════════════════════
+//  星空背景 Canvas
+// ═══════════════════════════════════════
+const bgCanvas = document.getElementById("bgCanvas");
+const bgCtx = bgCanvas.getContext("2d");
+let stars = [], shootingStars = [];
+
+function resizeBg() {
+  bgCanvas.width = window.innerWidth;
+  bgCanvas.height = window.innerHeight;
+}
+resizeBg();
+window.addEventListener("resize", resizeBg);
+
+for (let i = 0; i < 120; i++) {
+  stars.push({
+    x: Math.random() * window.innerWidth,
+    y: Math.random() * window.innerHeight,
+    r: .3 + Math.random() * 1.5,
+    a: Math.random(), da: .005 + Math.random() * .015,
+    dir: Math.random() > .5 ? 1 : -1
+  });
+}
+
+function spawnShootingStar() {
+  shootingStars.push({
+    x: Math.random() * bgCanvas.width,
+    y: Math.random() * bgCanvas.height * .4,
+    vx: 4 + Math.random() * 4,
+    vy: 2 + Math.random() * 3,
+    life: 1, decay: .015 + Math.random() * .01,
+    len: 30 + Math.random() * 50
+  });
+}
+setInterval(spawnShootingStar, 3000 + Math.random() * 4000);
+
+function drawBg() {
+  bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
+  // 星星
+  for (const s of stars) {
+    s.a += s.da * s.dir;
+    if (s.a >= 1 || s.a <= .1) s.dir *= -1;
+    bgCtx.beginPath();
+    bgCtx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+    bgCtx.fillStyle = `rgba(255,255,255,${s.a})`;
+    bgCtx.fill();
   }
-})();
+  // 流星
+  for (let i = shootingStars.length - 1; i >= 0; i--) {
+    const ss = shootingStars[i];
+    ss.x += ss.vx; ss.y += ss.vy; ss.life -= ss.decay;
+    if (ss.life <= 0) { shootingStars.splice(i, 1); continue; }
+    const grad = bgCtx.createLinearGradient(ss.x, ss.y, ss.x - ss.vx * ss.len / 5, ss.y - ss.vy * ss.len / 5);
+    grad.addColorStop(0, `rgba(255,255,255,${ss.life})`);
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    bgCtx.strokeStyle = grad;
+    bgCtx.lineWidth = 1.5;
+    bgCtx.beginPath();
+    bgCtx.moveTo(ss.x, ss.y);
+    bgCtx.lineTo(ss.x - ss.vx * ss.len / 5, ss.y - ss.vy * ss.len / 5);
+    bgCtx.stroke();
+  }
+  requestAnimationFrame(drawBg);
+}
+drawBg();
 
-// ============ 创建气球SVG ============
-function createBalloonSVG(theme) {
+// ═══════════════════════════════════════
+//  气球创建
+// ═══════════════════════════════════════
+let svgIdCounter = 0;
+function createBalloonSVG(t) {
+  const id = "bg" + (svgIdCounter++);
   return `<svg viewBox="0 0 100 140" xmlns="http://www.w3.org/2000/svg">
     <defs>
-      <radialGradient id="g${theme.body.slice(1)}" cx="35%" cy="30%" r="65%">
-        <stop offset="0%" stop-color="${theme.shine}"/>
-        <stop offset="70%" stop-color="${theme.body}"/>
-        <stop offset="100%" stop-color="${theme.shadow}"/>
+      <radialGradient id="${id}" cx="35%" cy="28%" r="65%">
+        <stop offset="0%" stop-color="${t.shine}"/>
+        <stop offset="65%" stop-color="${t.body}"/>
+        <stop offset="100%" stop-color="${t.shadow}"/>
       </radialGradient>
+      <filter id="f${id}"><feGaussianBlur stdDeviation=".5"/></filter>
     </defs>
-    <ellipse cx="50" cy="55" rx="38" ry="46"
-      fill="url(#g${theme.body.slice(1)})" />
-    <ellipse cx="38" cy="38" rx="10" ry="14"
-      fill="rgba(255,255,255,.25)" transform="rotate(-25,38,38)" />
-    <polygon points="50,100 44,110 56,110" fill="${theme.shadow}" />
-    <line x1="50" y1="110" x2="50" y2="138"
-      stroke="rgba(255,255,255,.4)" stroke-width="1.2"
-      stroke-dasharray="3,2" />
+    <ellipse cx="50" cy="54" rx="38" ry="46" fill="url(#${id})"/>
+    <ellipse cx="38" cy="36" rx="9" ry="13" fill="rgba(255,255,255,.28)" transform="rotate(-25,38,36)"/>
+    <ellipse cx="58" cy="30" rx="4" ry="5" fill="rgba(255,255,255,.12)" transform="rotate(-15,58,30)"/>
+    <polygon points="50,99 44,110 56,110" fill="${t.shadow}" opacity=".8"/>
+    <path d="M50,110 Q48,118 52,125 Q48,132 50,138" stroke="rgba(255,255,255,.35)" stroke-width="1" fill="none"/>
   </svg>`;
 }
 
-// ============ 生成气球 ============
 function spawnBalloon() {
-  const theme = BALLOON_THEMES[Math.floor(Math.random() * BALLOON_THEMES.length)];
-  const size = 60 + Math.random() * 40; // 60-100px
+  const t = THEMES[Math.floor(Math.random() * THEMES.length)];
+  const size = 55 + Math.random() * 45;
   const el = document.createElement("div");
   el.className = "balloon";
-  el.innerHTML = createBalloonSVG(theme);
+  el.innerHTML = createBalloonSVG(t);
   el.style.width = size + "px";
   el.style.height = (size * 1.4) + "px";
-  el.style.left = (8 + Math.random() * 78) + "vw";
-  el.style.bottom = -(size * 1.5) + "px";
+  el.style.left = (5 + Math.random() * 80) + "vw";
+  el.style.bottom = -(size * 1.6) + "px";
 
-  const speed = 5 + Math.random() * 6; // 5-11s
+  const speed = 6 + Math.random() * 7;
   el.style.setProperty("--speed", speed + "s");
-  el.style.setProperty("--sway-start", (Math.random() * 10 - 5) + "deg");
-  el.style.setProperty("--sway-mid", (Math.random() * 10 - 5) + "deg");
+  el.style.setProperty("--r1", (Math.random() * 8 - 4) + "deg");
+  el.style.setProperty("--r2", (Math.random() * 8 - 4) + "deg");
+  el.style.setProperty("--r3", (Math.random() * 8 - 4) + "deg");
+  el.style.setProperty("--s", (.9 + Math.random() * .2).toFixed(2));
 
-  el.addEventListener("click", (e) => {
-    e.stopPropagation();
-    popBalloon(el, theme);
-  });
-
-  game.appendChild(el);
-
-  // 飘出屏幕后移除
+  el._theme = t;
+  el.addEventListener("click", (e) => { e.stopPropagation(); popBalloon(el); });
   el.addEventListener("animationend", () => el.remove());
+  game.appendChild(el);
 }
 
-// ============ 爆炸效果 ============
-function popBalloon(el, theme) {
-  const rect = el.getBoundingClientRect();
-  const cx = rect.left + rect.width / 2;
-  const cy = rect.top + rect.height / 2;
-
-  // 移除气球
-  el.style.pointerEvents = "none";
+// ═══════════════════════════════════════
+//  爆炸系统 — 分层粒子
+// ═══════════════════════════════════════
+function popBalloon(el) {
+  const t = el._theme;
+  const r = el.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   el.remove();
 
-  // 更新分数 & 连击
+  // 分数
   score++;
-  scoreEl.textContent = score;
-  scoreEl.style.transform = "scale(1.3)";
-  setTimeout(() => scoreEl.style.transform = "scale(1)", 150);
+  scoreNum.textContent = score;
+  scoreNum.classList.add("pop");
+  setTimeout(() => scoreNum.classList.remove("pop"), 160);
 
+  // 连击
   combo++;
+  if (combo > maxCombo) maxCombo = combo;
   clearTimeout(comboTimer);
-  comboTimer = setTimeout(() => combo = 0, 1500);
-
-  // 连击提示
-  if (combo >= 3) {
-    showCombo(cx, cy, combo);
+  comboTimer = setTimeout(() => { combo = 0; comboBox.style.opacity = "0"; }, 2000);
+  comboNum.textContent = combo;
+  if (combo >= 2) {
+    comboBox.style.opacity = "1";
+    comboNum.classList.add("pop");
+    setTimeout(() => comboNum.classList.remove("pop"), 160);
   }
 
-  // 爆炸闪光
-  const flash = document.createElement("div");
-  flash.className = "flash";
-  flash.style.left = cx + "px";
-  flash.style.top = cy + "px";
-  game.appendChild(flash);
-  flash.addEventListener("animationend", () => flash.remove());
+  // 震屏
+  document.body.classList.remove("shake","mega-shake");
+  void document.body.offsetWidth; // force reflow
+  document.body.classList.add(combo >= 8 ? "mega-shake" : "shake");
+  setTimeout(() => document.body.classList.remove("shake","mega-shake"), 450);
 
-  // 爆炸粒子
-  const explosion = document.createElement("div");
-  explosion.className = "explosion";
-  explosion.style.left = cx + "px";
-  explosion.style.top = cy + "px";
-  const colors = [theme.body, theme.shine, theme.shadow, "#fff"];
-  for (let i = 0; i < 16; i++) {
-    const p = document.createElement("div");
-    p.className = "particle";
-    const angle = (Math.PI * 2 / 16) * i + Math.random() * 0.4;
-    const dist = 40 + Math.random() * 70;
-    p.style.setProperty("--tx", Math.cos(angle) * dist + "px");
-    p.style.setProperty("--ty", Math.sin(angle) * dist + "px");
-    p.style.width = p.style.height = (3 + Math.random() * 6) + "px";
-    p.style.background = colors[Math.floor(Math.random() * colors.length)];
-    explosion.appendChild(p);
+  // 连击文字
+  if (combo >= 3) showComboText(cx, cy, combo);
+
+  // 里程碑
+  if ([10,25,50,100].includes(score)) showMilestone(score);
+
+  // === 爆炸视觉 ===
+  const colors = [t.body, t.shine, t.shadow, "#fff", "#ffe0ec"];
+
+  // 1) 闪光
+  createEl("flash", fxLayer, { left: cx+"px", top: cy+"px" });
+
+  // 2) 冲击波
+  createEl("shockwave" + (combo >= 6 ? " big" : ""), fxLayer, { left: cx+"px", top: cy+"px" });
+
+  // 3) 圆形粒子 (12-20个)
+  const pCount = 12 + Math.min(combo, 8);
+  for (let i = 0; i < pCount; i++) {
+    const angle = (Math.PI * 2 / pCount) * i + Math.random() * .5;
+    const dist = 50 + Math.random() * (60 + combo * 5);
+    const size = 3 + Math.random() * 7;
+    createEl("p-circle", fxLayer, {
+      left: cx+"px", top: cy+"px",
+      width: size+"px", height: size+"px",
+      background: colors[i % colors.length],
+      "--tx": Math.cos(angle) * dist + "px",
+      "--ty": Math.sin(angle) * dist + "px",
+      "--dur": (.4 + Math.random() * .3) + "s"
+    });
   }
-  game.appendChild(explosion);
-  setTimeout(() => explosion.remove(), 700);
 
-  // 音效（合成）
-  playPop();
+  // 4) 方形碎片 (6-12个)
+  for (let i = 0; i < 6 + Math.min(combo, 6); i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 30 + Math.random() * 80;
+    const w = 4 + Math.random() * 8, h = 3 + Math.random() * 6;
+    createEl("p-shard", fxLayer, {
+      left: cx+"px", top: cy+"px",
+      width: w+"px", height: h+"px",
+      background: colors[Math.floor(Math.random() * colors.length)],
+      "--tx": Math.cos(angle) * dist + "px",
+      "--ty": Math.sin(angle) * dist + "px",
+      "--rot": (180 + Math.random() * 540) + "deg",
+      "--dur": (.45 + Math.random() * .35) + "s",
+      transform: `rotate(${Math.random()*360}deg)`
+    });
+  }
 
-  // 显示安慰语
+  // 5) 气球橡胶碎片 (4-6个)
+  for (let i = 0; i < 4 + Math.floor(Math.random() * 3); i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const tx = Math.cos(angle) * (20 + Math.random() * 40);
+    createEl("p-fragment", fxLayer, {
+      left: cx+"px", top: cy+"px",
+      width: (8 + Math.random() * 12) + "px",
+      height: (5 + Math.random() * 8) + "px",
+      background: t.body,
+      opacity: ".7",
+      "--tx": tx + "px",
+      "--fy": (60 + Math.random() * 80) + "px",
+      "--rot": (90 + Math.random() * 270) + "deg",
+      "--dur": (.6 + Math.random() * .4) + "s"
+    });
+  }
+
+  // 6) 光线拖尾 (combo>=4)
+  if (combo >= 4) {
+    for (let i = 0; i < Math.min(combo, 10); i++) {
+      const angle = (Math.PI * 2 / Math.min(combo, 10)) * i;
+      createEl("light-trail", fxLayer, {
+        left: cx+"px", top: cy+"px",
+        background: `linear-gradient(to bottom, ${t.shine}, transparent)`,
+        transform: `rotate(${angle}rad)`,
+        "--len": (20 + Math.random() * 30) + "px"
+      });
+    }
+  }
+
+  // 音效
+  playPop(combo);
+
+  // 安慰语
   showComfort();
+
+  // 清理 FX DOM
+  setTimeout(() => {
+    while (fxLayer.children.length > 60) fxLayer.removeChild(fxLayer.firstChild);
+  }, 1000);
 }
 
-// ============ 连击提示 ============
-function showCombo(x, y, count) {
+function createEl(className, parent, styles) {
   const el = document.createElement("div");
-  el.className = "combo";
-  el.textContent = `🔥 ${count} 连击！`;
+  el.className = className;
+  for (const [k, v] of Object.entries(styles)) {
+    if (k.startsWith("--")) el.style.setProperty(k, v);
+    else el.style[k] = v;
+  }
+  parent.appendChild(el);
+  el.addEventListener("animationend", () => el.remove(), { once: true });
+  return el;
+}
+
+// ═══════════════════════════════════════
+//  连击文字
+// ═══════════════════════════════════════
+function showComboText(x, y, c) {
+  const texts = [
+    "", "", "",
+    "NICE! ×3", "GREAT! ×4", "AWESOME! ×5",
+    "AMAZING! ×6", "FANTASTIC! ×7", "🔥 INSANE! ×8",
+    "⚡ GODLIKE! ×9", "💥 LEGENDARY! ×10"
+  ];
+  const label = c < texts.length ? texts[c] : `💥 ×${c} UNSTOPPABLE!`;
+  const size = Math.min(18 + c * 2, 38);
+  const hue = (c * 30) % 360;
+  const el = document.createElement("div");
+  el.className = "combo-text";
+  el.textContent = label;
   el.style.left = x + "px";
-  el.style.top = (y - 30) + "px";
+  el.style.top = (y - 20) + "px";
+  el.style.fontSize = size + "px";
+  el.style.color = `hsl(${hue},90%,65%)`;
+  el.style.setProperty("--glow", `hsla(${hue},90%,55%,.6)`);
   document.body.appendChild(el);
   el.addEventListener("animationend", () => el.remove());
 }
 
-// ============ 安慰语卡片 ============
+// ═══════════════════════════════════════
+//  里程碑
+// ═══════════════════════════════════════
+function showMilestone(n) {
+  const el = document.createElement("div");
+  el.className = "milestone";
+  el.textContent = `🎉 ${n} 个烦恼已消灭！`;
+  document.body.appendChild(el);
+  el.addEventListener("animationend", () => el.remove());
+  spawnConfetti(50);
+}
+
+// ═══════════════════════════════════════
+//  安慰语卡片
+// ═══════════════════════════════════════
 function showComfort() {
-  // 去掉已有卡片
   document.querySelectorAll(".comfort-card").forEach(c => {
     c.classList.add("out");
-    setTimeout(() => c.remove(), 350);
+    setTimeout(() => c.remove(), 300);
   });
 
-  // 随机不重复
   let idx;
-  do { idx = Math.floor(Math.random() * COMFORTS.length); } while (idx === lastComfort);
-  lastComfort = idx;
+  do { idx = Math.floor(Math.random() * COMFORTS.length); } while (idx === lastIdx);
+  lastIdx = idx;
   const item = COMFORTS[idx];
+  currentComfort = item;
 
   const card = document.createElement("div");
   card.className = "comfort-card";
   card.innerHTML = `
     <div class="emoji">${item.emoji}</div>
+    <div class="category-tag">#${item.cat}</div>
     <div class="text">${item.text}</div>
-    <div class="hint">点击任意处关闭 · 继续戳气球吧</div>
+    <div class="card-actions">
+      <button class="btn btn-share" onclick="generateShareImage()">📸 生成分享图</button>
+      <button class="btn btn-close" id="closeCardBtn">继续戳</button>
+    </div>
   `;
   document.body.appendChild(card);
+  spawnConfetti(20);
 
-  // 撒彩带
-  spawnConfetti();
-
-  // 点击关闭
-  const close = (e) => {
-    if (e.target.closest(".balloon")) return;
+  const closeBtn = card.querySelector("#closeCardBtn");
+  const closeCard = () => {
     card.classList.add("out");
-    setTimeout(() => card.remove(), 350);
-    document.removeEventListener("click", close);
+    setTimeout(() => card.remove(), 300);
   };
-  setTimeout(() => document.addEventListener("click", close), 100);
+  closeBtn.addEventListener("click", (e) => { e.stopPropagation(); closeCard(); });
 
-  // 自动关闭
+  // 点击空白关闭
+  const bgClose = (e) => {
+    if (e.target.closest(".comfort-card") || e.target.closest(".balloon") || e.target.closest(".share-overlay")) return;
+    closeCard();
+    document.removeEventListener("click", bgClose);
+  };
+  setTimeout(() => document.addEventListener("click", bgClose), 150);
+
+  // 5秒自动关闭
   setTimeout(() => {
-    if (card.parentNode) {
-      card.classList.add("out");
-      setTimeout(() => card.remove(), 350);
-      document.removeEventListener("click", close);
+    if (card.parentNode && !card.classList.contains("out")) {
+      closeCard();
+      document.removeEventListener("click", bgClose);
     }
-  }, 3500);
+  }, 5000);
 }
 
-// ============ 撒彩带 ============
-function spawnConfetti() {
-  const colors = ["#FF6B8A","#7C5CFC","#00C9A7","#FFB347","#FF6F61","#4FC3F7","#E040FB","#FFD54F"];
-  for (let i = 0; i < 25; i++) {
+// ═══════════════════════════════════════
+//  撒彩带
+// ═══════════════════════════════════════
+function spawnConfetti(n = 20) {
+  const colors = ["#FF6B8A","#7C5CFC","#00C9A7","#FFB347","#FF6F61","#4FC3F7","#E040FB","#FFD54F","#69F0AE","#F48FB1"];
+  for (let i = 0; i < n; i++) {
     const c = document.createElement("div");
     c.className = "confetti";
-    c.style.left = (10 + Math.random() * 80) + "vw";
+    c.style.left = (5 + Math.random() * 90) + "vw";
     c.style.top = -10 + "px";
     c.style.background = colors[Math.floor(Math.random() * colors.length)];
-    c.style.borderRadius = Math.random() > 0.5 ? "50%" : "2px";
-    c.style.width = (5 + Math.random() * 8) + "px";
-    c.style.height = (8 + Math.random() * 12) + "px";
-    c.style.setProperty("--cf-dur", (1.5 + Math.random() * 2) + "s");
-    c.style.setProperty("--cf-rot", (360 + Math.random() * 720) + "deg");
-    c.style.animationDelay = (Math.random() * 0.3) + "s";
+    c.style.borderRadius = Math.random() > .5 ? "50%" : (Math.random() > .5 ? "2px" : "0");
+    c.style.width = (4 + Math.random() * 8) + "px";
+    c.style.height = (6 + Math.random() * 14) + "px";
+    c.style.setProperty("--dur", (1.5 + Math.random() * 2.5) + "s");
+    c.style.setProperty("--rot", (360 + Math.random() * 1080) + "deg");
+    c.style.animationDelay = (Math.random() * .5) + "s";
     document.body.appendChild(c);
     c.addEventListener("animationend", () => c.remove());
   }
 }
 
-// ============ 合成音效 ============
-function playPop() {
+// ═══════════════════════════════════════
+//  音效系统
+// ═══════════════════════════════════════
+function playPop(comboLevel) {
   try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    // 噪声爆破
-    const buf = ctx.createBuffer(1, ctx.sampleRate * 0.08, ctx.sampleRate);
-    const data = buf.getChannelData(0);
-    for (let i = 0; i < data.length; i++) {
-      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / data.length, 3);
+    const ctx = getAudioCtx();
+    const now = ctx.currentTime;
+
+    // 爆破噪声
+    const len = .06 + Math.min(comboLevel * .005, .04);
+    const buf = ctx.createBuffer(1, ctx.sampleRate * len, ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < d.length; i++) {
+      d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / d.length, 2.5);
     }
     const noise = ctx.createBufferSource();
     noise.buffer = buf;
-    // 高通滤波
     const hp = ctx.createBiquadFilter();
-    hp.type = "highpass"; hp.frequency.value = 1200;
-    // 增益
+    hp.type = "highpass";
+    hp.frequency.value = 800 + comboLevel * 100;
     const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.3, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(.25, now);
+    gain.gain.exponentialRampToValueAtTime(.001, now + len);
     noise.connect(hp).connect(gain).connect(ctx.destination);
-    noise.start();
-    noise.stop(ctx.currentTime + 0.08);
-    // 短延迟关闭
-    setTimeout(() => ctx.close(), 200);
-  } catch(e) {}
+    noise.start(now); noise.stop(now + len);
+
+    // 连击加上音调升高的泛音
+    if (comboLevel >= 3) {
+      const osc = ctx.createOscillator();
+      const gOsc = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = 600 + comboLevel * 80;
+      gOsc.gain.setValueAtTime(.08, now);
+      gOsc.gain.exponentialRampToValueAtTime(.001, now + .12);
+      osc.connect(gOsc).connect(ctx.destination);
+      osc.start(now); osc.stop(now + .12);
+    }
+  } catch (e) {}
 }
 
-// ============ 气球生成循环 ============
-let spawnInterval = 900;
+// ═══════════════════════════════════════
+//  📸 分享图生成
+// ═══════════════════════════════════════
+function generateShareImage() {
+  if (!currentComfort) return;
 
+  // 关闭当前卡片
+  document.querySelectorAll(".comfort-card").forEach(c => {
+    c.classList.add("out");
+    setTimeout(() => c.remove(), 300);
+  });
+
+  const W = 750, H = 1000;
+  const canvas = document.createElement("canvas");
+  canvas.width = W; canvas.height = H;
+  const ctx = canvas.getContext("2d");
+
+  // 背景渐变
+  const bgGrad = ctx.createLinearGradient(0, 0, W, H);
+  bgGrad.addColorStop(0, "#1a1135");
+  bgGrad.addColorStop(.4, "#2d1f5e");
+  bgGrad.addColorStop(.7, "#1e1645");
+  bgGrad.addColorStop(1, "#0f0c29");
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  // 星星
+  for (let i = 0; i < 80; i++) {
+    const sx = Math.random() * W, sy = Math.random() * H;
+    const sr = .5 + Math.random() * 1.5;
+    ctx.beginPath(); ctx.arc(sx, sy, sr, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(255,255,255,${.15 + Math.random() * .5})`;
+    ctx.fill();
+  }
+
+  // 装饰光晕 — 左上
+  const g1 = ctx.createRadialGradient(100, 150, 0, 100, 150, 250);
+  g1.addColorStop(0, "rgba(255,107,193,.12)");
+  g1.addColorStop(1, "rgba(255,107,193,0)");
+  ctx.fillStyle = g1;
+  ctx.fillRect(0, 0, 400, 400);
+
+  // 装饰光晕 — 右下
+  const g2 = ctx.createRadialGradient(650, 800, 0, 650, 800, 280);
+  g2.addColorStop(0, "rgba(168,230,207,.1)");
+  g2.addColorStop(1, "rgba(168,230,207,0)");
+  ctx.fillStyle = g2;
+  ctx.fillRect(350, 550, 400, 450);
+
+  // 中间毛玻璃卡片
+  const cardX = 50, cardY = 200, cardW = W - 100, cardH = 480;
+  const cardR = 32;
+  ctx.save();
+  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
+  ctx.clip();
+  ctx.fillStyle = "rgba(255,255,255,.06)";
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  // 卡片内部渐变
+  const cardGrad = ctx.createLinearGradient(cardX, cardY, cardX + cardW, cardY + cardH);
+  cardGrad.addColorStop(0, "rgba(255,255,255,.04)");
+  cardGrad.addColorStop(1, "rgba(255,255,255,.01)");
+  ctx.fillStyle = cardGrad;
+  ctx.fillRect(cardX, cardY, cardW, cardH);
+  ctx.restore();
+  // 卡片描边
+  ctx.save();
+  roundRect(ctx, cardX, cardY, cardW, cardH, cardR);
+  ctx.strokeStyle = "rgba(255,255,255,.12)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.restore();
+
+  // Emoji
+  ctx.font = "64px serif";
+  ctx.textAlign = "center";
+  ctx.fillText(currentComfort.emoji, W / 2, cardY + 90);
+
+  // 分类标签
+  ctx.font = "500 16px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.35)";
+  const tag = `#${currentComfort.cat}`;
+  const tagW = ctx.measureText(tag).width + 28;
+  roundRect(ctx, W/2 - tagW/2, cardY + 112, tagW, 30, 15);
+  ctx.fillStyle = "rgba(255,255,255,.06)";
+  ctx.fill();
+  ctx.fillStyle = "rgba(255,255,255,.45)";
+  ctx.textAlign = "center";
+  ctx.fillText(tag, W / 2, cardY + 133);
+
+  // 安慰语主文
+  ctx.font = "600 30px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillStyle = "#ffffff";
+  ctx.textAlign = "center";
+  wrapText(ctx, currentComfort.text, W / 2, cardY + 210, cardW - 100, 48);
+
+  // 分割线
+  ctx.strokeStyle = "rgba(255,255,255,.08)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(cardX + 60, cardY + cardH - 110);
+  ctx.lineTo(cardX + cardW - 60, cardY + cardH - 110);
+  ctx.stroke();
+
+  // 统计
+  ctx.font = "500 18px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.5)";
+  const elapsed = Math.floor((Date.now() - startTime) / 1000);
+  const min = Math.floor(elapsed / 60), sec = elapsed % 60;
+  ctx.fillText(`🎈 已戳破 ${score} 个烦恼  ·  🔥 最高连击 ×${maxCombo}  ·  ⏱️ ${min}分${sec}秒`, W / 2, cardY + cardH - 70);
+
+  // 顶部标题
+  ctx.font = "800 36px 'PingFang SC','Microsoft YaHei',sans-serif";
+  const titleGrad = ctx.createLinearGradient(W/2 - 150, 0, W/2 + 150, 0);
+  titleGrad.addColorStop(0, "#ff6bc1");
+  titleGrad.addColorStop(.5, "#ffc371");
+  titleGrad.addColorStop(1, "#a8e6cf");
+  ctx.fillStyle = titleGrad;
+  ctx.fillText("🎈 戳破烦恼 · 收获温暖", W / 2, 120);
+
+  ctx.font = "400 16px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.35)";
+  ctx.fillText("点击气球，让烦恼炸裂，让温暖涌来", W / 2, 155);
+
+  // 底部 CTA
+  // 圆角底栏
+  const barY = H - 120, barH = 80;
+  roundRect(ctx, 50, barY, W - 100, barH, 20);
+  ctx.fillStyle = "rgba(255,255,255,.04)";
+  ctx.fill();
+  roundRect(ctx, 50, barY, W - 100, barH, 20);
+  ctx.strokeStyle = "rgba(255,255,255,.08)";
+  ctx.lineWidth = 1;
+  ctx.stroke();
+
+  ctx.font = "600 20px 'PingFang SC','Microsoft YaHei',sans-serif";
+  ctx.fillStyle = "rgba(255,255,255,.7)";
+  ctx.fillText("长按识别 · 和我一起戳气球吧 👆", W / 2, barY + 48);
+
+  // 顶部小装饰气球
+  drawMiniBalloon(ctx, 80, 60, 18, "#FF6B8A");
+  drawMiniBalloon(ctx, 670, 45, 14, "#7C5CFC");
+  drawMiniBalloon(ctx, 620, 85, 10, "#FFB347");
+  drawMiniBalloon(ctx, 130, 170, 12, "#00C9A7");
+  drawMiniBalloon(ctx, 630, 170, 15, "#E040FB");
+
+  // ── 弹出分享面板 ──
+  showShareOverlay(canvas);
+}
+
+function drawMiniBalloon(ctx, x, y, r, color) {
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(x, y, r * .82, r, 0, 0, Math.PI * 2);
+  const g = ctx.createRadialGradient(x - r*.25, y - r*.3, 0, x, y, r);
+  g.addColorStop(0, lighten(color, 40));
+  g.addColorStop(.7, color);
+  g.addColorStop(1, darken(color, 25));
+  ctx.fillStyle = g;
+  ctx.fill();
+  // 高光
+  ctx.beginPath();
+  ctx.ellipse(x - r*.2, y - r*.35, r*.25, r*.35, -.4, 0, Math.PI * 2);
+  ctx.fillStyle = "rgba(255,255,255,.25)";
+  ctx.fill();
+  // 线
+  ctx.beginPath();
+  ctx.moveTo(x, y + r);
+  ctx.quadraticCurveTo(x - 2, y + r + 8, x + 1, y + r + 16);
+  ctx.strokeStyle = "rgba(255,255,255,.2)";
+  ctx.lineWidth = .8;
+  ctx.stroke();
+  ctx.restore();
+}
+
+function lighten(hex, pct) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) + Math.floor(255 * pct / 100);
+  let g = ((num >> 8) & 0xff) + Math.floor(255 * pct / 100);
+  let b = (num & 0xff) + Math.floor(255 * pct / 100);
+  r = Math.min(255, r); g = Math.min(255, g); b = Math.min(255, b);
+  return `rgb(${r},${g},${b})`;
+}
+function darken(hex, pct) {
+  const num = parseInt(hex.slice(1), 16);
+  let r = (num >> 16) - Math.floor(255 * pct / 100);
+  let g = ((num >> 8) & 0xff) - Math.floor(255 * pct / 100);
+  let b = (num & 0xff) - Math.floor(255 * pct / 100);
+  r = Math.max(0, r); g = Math.max(0, g); b = Math.max(0, b);
+  return `rgb(${r},${g},${b})`;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h);
+  ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+function wrapText(ctx, text, x, y, maxW, lineH) {
+  let line = "";
+  for (let i = 0; i < text.length; i++) {
+    const test = line + text[i];
+    if (ctx.measureText(test).width > maxW && line) {
+      ctx.fillText(line, x, y);
+      line = text[i]; y += lineH;
+    } else {
+      line = test;
+    }
+  }
+  ctx.fillText(line, x, y);
+}
+
+// ═══════════════════════════════════════
+//  分享弹窗
+// ═══════════════════════════════════════
+function showShareOverlay(canvas) {
+  // 移除旧的
+  document.querySelectorAll(".share-overlay").forEach(o => o.remove());
+
+  const overlay = document.createElement("div");
+  overlay.className = "share-overlay";
+  overlay.innerHTML = `
+    <div class="share-actions">
+      <button class="btn btn-download" id="dlBtn">📥 保存到相册</button>
+      <button class="btn btn-back" id="backBtn">↩ 继续戳</button>
+    </div>
+    <div class="share-tip">长按图片可保存 · 分享到朋友圈让更多人收获温暖</div>
+  `;
+  overlay.insertBefore(canvas, overlay.firstChild);
+  document.body.appendChild(overlay);
+
+  overlay.querySelector("#dlBtn").addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.download = `戳破烦恼-${score}个.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+
+  overlay.querySelector("#backBtn").addEventListener("click", () => {
+    overlay.style.opacity = "0";
+    setTimeout(() => overlay.remove(), 300);
+  });
+
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) {
+      overlay.style.opacity = "0";
+      setTimeout(() => overlay.remove(), 300);
+    }
+  });
+}
+
+// ═══════════════════════════════════════
+//  气球生成调度
+// ═══════════════════════════════════════
 function scheduleSpawn() {
   spawnBalloon();
-  // 随着分数增加，加快生成速度
-  const interval = Math.max(400, spawnInterval - score * 8);
-  setTimeout(scheduleSpawn, interval + Math.random() * 400);
+  const base = Math.max(350, 850 - score * 6);
+  setTimeout(scheduleSpawn, base + Math.random() * 400);
 }
-
-// 初始快速生成几个
-for (let i = 0; i < 4; i++) {
-  setTimeout(() => spawnBalloon(), i * 300);
-}
-setTimeout(scheduleSpawn, 1500);
+// 初始
+for (let i = 0; i < 5; i++) setTimeout(spawnBalloon, i * 250);
+setTimeout(scheduleSpawn, 1400);
 </script>
-
 </body>
 </html>
